@@ -163,15 +163,26 @@ public class healthbargui {
     }
 
     private static boolean isTransparentBlock(BlockState state) {
-        String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        // Check for air
+        if (state.isAir()) return true;
 
-        // Check if it's grass, fern, vine, or any glass
-        return state.is(Blocks.SHORT_GRASS) ||
+        // Check for common non-solid blocks
+        if (state.is(Blocks.VINE) ||
                 state.is(Blocks.TALL_GRASS) ||
+                state.is(Blocks.SHORT_GRASS) ||
                 state.is(Blocks.FERN) ||
                 state.is(Blocks.LARGE_FERN) ||
-                state.is(Blocks.VINE) ||
-                blockId.contains("glass"); // This catches all glass blocks
+                state.is(Blocks.WATER) ||
+                state.is(Blocks.LILY_PAD)) return true;
+
+        // Check for any type of glass
+        String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        if (blockId.contains("glass")) return true;
+
+        // Optionally, check for blocks that do not block motion
+        if (!state.blocksMotion()) return true;
+
+        return false;
     }
 
     private static float lerp(float a, float b, float t) {
