@@ -137,9 +137,13 @@ public class healthbargui {
             entityName = target.getDisplayName().getString();
         }
 
-        // Fallback if still empty/null
         if (entityName == null || entityName.isEmpty()) {
             entityName = target.getName().getString();
+        }
+
+        String stripped = net.minecraft.ChatFormatting.stripFormatting(entityName);
+        if (stripped != null) {
+            entityName = stripped;
         }
 
         int nameW = mc.font.width(entityName);
