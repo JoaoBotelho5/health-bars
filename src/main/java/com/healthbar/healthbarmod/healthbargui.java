@@ -1,8 +1,7 @@
 package com.healthbar.healthbarmod;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.ClipContext;
@@ -86,14 +85,12 @@ public class healthbargui {
 
         if (!target.isAlive()) return;
 
-        GuiGraphics gui = event.getGuiGraphics();
-        float current = target.getHealth();
+        GuiGraphicsExtractor gui = event.getGuiGraphics();        float current = target.getHealth();
         float max = target.getMaxHealth();
         if (max <= 0) return;
         float percent = current / max;
 
         int width = 180;
-        int height = 44;
         int x = 8;
         int y = 8;
 
@@ -131,34 +128,30 @@ public class healthbargui {
         String entityName;
 
         // Try multiple methods to get the name
-        if (target.hasCustomName()) {
+        if (target.hasCustomName() && target.getCustomName() != null) {
             entityName = target.getCustomName().getString();
         } else {
             entityName = target.getDisplayName().getString();
         }
 
-        if (entityName == null || entityName.isEmpty()) {
+        if (entityName.isEmpty()) {
             entityName = target.getName().getString();
         }
 
-        String stripped = net.minecraft.ChatFormatting.stripFormatting(entityName);
-        if (stripped != null) {
-            entityName = stripped;
-        }
+        entityName = net.minecraft.ChatFormatting.stripFormatting(entityName);
 
         int nameW = mc.font.width(entityName);
         int nameX = x + width / 2 - nameW / 2;
 
         // Draw shadow first (darker, offset)
-        gui.drawString(mc.font, entityName, nameX + 1, y + 5, 0xFF000000, false);
+        gui.text(mc.font, entityName, nameX + 1, y + 5, 0xFF000000, false);
         // Draw main text
-        gui.drawString(mc.font, entityName, nameX, y + 4, 0xFFFFFFFF, false);
-
+        gui.text(mc.font, entityName, nameX, y + 4, 0xFFFFFFFF, false);
         String hp = String.format("%.0f / %.0f", current, max);
         String pct = String.format("%.0f%%", percent * 100f);
 
-        gui.drawString(mc.font, hp, barX, barY + barHeight + 4, 0xE6FFFFFF, false);
-        gui.drawString(mc.font, pct,
+        gui.text(mc.font, hp, barX, barY + barHeight + 4, 0xE6FFFFFF, false);
+        gui.text(mc.font, pct,
                 x + width - mc.font.width(pct) - 8,
                 barY + barHeight + 4,
                 0xFFE0E0E0,
@@ -168,7 +161,7 @@ public class healthbargui {
             gui.fill(barX, barY, barX + barWidth, barY + barHeight, 0x33FF0000);
         }
     }
-
+    @SuppressWarnings("deprecation")
     private static boolean isTransparentBlock(BlockState state) {
         // Check for air
         if (state.isAir()) return true;
