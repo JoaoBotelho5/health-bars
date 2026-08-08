@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -50,20 +51,25 @@ public class healthbargui {
                 // Do entity check through this transparent block
                 Vec3 eyePos = mc.player.getEyePosition(1.0F);
                 Vec3 lookVec = mc.player.getViewVector(1.0F);
-                Vec3 endPos = eyePos.add(lookVec.scale(5.0));
+                Vec3 endPos = eyePos.add(lookVec.scale(15.0));
 
                 for (LivingEntity entity : mc.level.getEntitiesOfClass(LivingEntity.class,
-                        new AABB(eyePos, endPos).inflate(1.0))) {
+                        new AABB(eyePos, endPos).inflate(0.75))) {
                     if (entity == mc.player || entity instanceof ArmorStand) continue;
 
                     AABB box = entity.getBoundingBox().inflate(0.3);
                     Optional<Vec3> clip = box.clip(eyePos, endPos);
 
                     if (clip.isPresent()) {
-                        target = entity;
-                        cachedTarget = entity;
-                        lastSeenTime = System.currentTimeMillis();
-                        break;
+                        Vec3 aimPoint = clip.get();
+                        boolean visible = !isOccluded(mc.level, eyePos, aimPoint, mc.player);
+
+                        if (visible) {
+                            target = entity;
+                            cachedTarget = entity;
+                            lastSeenTime = System.currentTimeMillis();
+                            break;
+                        }
                     }
                 }
             }
@@ -103,9 +109,6 @@ public class healthbargui {
         int barWidth = width - 20;
         int barHeight = 10;
 
-        gui.fill(x + 2, y + 2, x + width + 2, y + height + 2, 0x22000000);
-        gui.fill(x, y, x + width, y + height, 0xCC0B0B0B);
-        gui.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0xCC101010);
 
         gui.fill(barX - 2, barY - 2, barX + barWidth + 2, barY + barHeight + 2, 0xFF000000);
         gui.fill(barX - 1, barY - 1, barX + barWidth + 1, barY + barHeight + 1, 0xFF2A2A2A);
@@ -118,7 +121,7 @@ public class healthbargui {
 
         gui.fill(barX, barY, barX + filled, barY + 2, 0x55FFFFFF);
 
-        if (percent <= 0.25f) {
+        if (percent <= 0.20f) {
             float pulse = (float) ((Math.sin(System.currentTimeMillis() / 150.0) + 1) * 0.5);
             int alpha = (int) (60 + pulse * 80);
             gui.fill(barX, barY, barX + filled, barY + barHeight, (alpha << 24) | 0x00FF0000);
@@ -158,7 +161,7 @@ public class healthbargui {
                 false);
 
         if (target.hurtTime > 0) {
-            gui.fill(x, y, x + width, y + height, 0x33FF0000);
+            gui.fill(barX, barY, barX + barWidth, barY + barHeight, 0x33FF0000);
         }
     }
 
@@ -183,6 +186,31 @@ public class healthbargui {
         if (!state.blocksMotion()) return true;
 
         return false;
+    }
+
+    private static boolean isOccluded(net.minecraft.world.level.Level level, Vec3 from, Vec3 to, net.minecraft.world.entity.Entity shooter) {
+        Vec3 current = from;
+        Vec3 direction = to.subtract(from);
+        double totalDist = direction.length();
+        if (totalDist < 0.01) return false;
+        direction = direction.normalize();
+
+        for (int i = 0; i < 32; i++) {
+            ClipContext ctx = new ClipContext(current, to,
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter);
+            BlockHitResult hitResult = level.clip(ctx);
+
+            if (hitResult.getType() != HitResult.Type.BLOCK) return false;
+
+            double distToHit = hitResult.getLocation().distanceTo(from);
+            if (distToHit >= totalDist - 0.05) return false;
+
+            BlockState state = level.getBlockState(hitResult.getBlockPos());
+            if (!isTransparentBlock(state)) return true;
+
+            current = hitResult.getLocation().add(direction.scale(0.05));
+        }
+        return true;
     }
 
     private static float lerp(float a, float b, float t) {
