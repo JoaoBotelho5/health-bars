@@ -4,6 +4,7 @@
 ![Side](https://img.shields.io/badge/side-client--only-lightgrey)
 
 CurseForge Link: https://www.curseforge.com/minecraft/mc-mods/healthbars
+
 Mod client-side para Minecraft (NeoForge) que mostra uma barra de vida sobreposta ao ecrã quando o jogador aponta para uma entidade — incluindo através de blocos transparentes (vidro, água, folhagem). Projeto pequeno e focado, mas com problemas de engenharia reais por trás de uma feature aparentemente simples.
 
 ## O que este projeto demonstra
